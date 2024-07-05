@@ -1,17 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './App.css'
 import Button from './components/Button';
+import { Toaster, toast } from 'sonner'
 
 function App() {
-  const [numbers, setNumbers] = useState<number[]>([]);
+  const diceNumbers: number[] = Array.from({ length: 12 }, (_, index) => index + 1);
+  const [diceNumber, setDiceNumber] = useState<number[]>([]);
+  const [deletedRecord, setDeletedRecord] = useState<number[]>([]);
 
-  const handleButtonClicked = (value : number) => {
-    setNumbers([...numbers, value]);
-  } 
+  const handleButtonClicked = useCallback((value : number) => {
+    setDiceNumber([...diceNumber, value]);
 
-  const isEmpty = (): boolean => numbers.length === 0;
-  const handleNextButton = () => setNumbers(numbers.slice(1));
-  const handleClearButton = () => setNumbers([]);
+    toast.info('Diced a ' + value + '!', {
+      className: 'bg-green-500 font-bold border-green-500',
+      icon: '🎲',
+      position: 'bottom-center',
+    })
+  }, [diceNumber]) 
+
+  const isEmpty = useCallback((): boolean => diceNumber.length === 0 , [diceNumber.length]);
+  const handleNextButton = useCallback(() => setDiceNumber(diceNumber.slice(1)), [diceNumber]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleClearButton = useCallback(() => {
+    if(!isEmpty()) {
+      setDeletedRecord(diceNumber)
+      setDiceNumber([]);
+  
+      toast('Data cleared!', {
+       action: {
+         label: 'Undo',
+         onClick: () => setDiceNumber(deletedRecord)
+       },
+       position: 'bottom-center',
+     })
+    }
+  }, [deletedRecord, diceNumber, isEmpty]) 
 
   useEffect(() => {
 
@@ -20,11 +44,11 @@ function App() {
       
         if (/^\d$/.test(key)) {
           const value = parseInt(key, 10);
-          setNumbers([...numbers, value]);
-        }
-
-        if(key === 'Enter'){
-           setNumbers(numbers.slice(1))
+          handleButtonClicked(value)
+        }else if(key === 'Enter'){
+          handleNextButton()
+        }else if(key === 'Backspace'){
+          handleClearButton()
         }
     };
 
@@ -34,11 +58,13 @@ function App() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [numbers]);
+  }, [diceNumber, handleButtonClicked, handleClearButton, handleNextButton]);
+
+
 
   return (
     <>
-      <main className='h-screen w-full flex justify-center items-center px-2' >
+      <main className='h-screen w-full flex justify-center items-center px-2 ' >
          <div className='h-[580px] w-[480px] py-7 px-10 flex flex-col gap-y-5 card bg-opacity-90 backdrop-filter backdrop-blur-25 backdrop-saturate-68 bg-blue-[#262626] border border-opacity-25 border-white rounded-lg'>
 
            <div className='flex justify-between'>
@@ -52,7 +78,7 @@ function App() {
            </div>
 
             <div className='grid grid-cols-4 gap-3 py-1'>
-               <Button values={Array.from({ length: 12 }, (_, index) => index + 1)}
+               <Button values={diceNumbers}
                   clickButton={(value) => handleButtonClicked(value)} />
             </div>
 
@@ -63,8 +89,8 @@ function App() {
               >NEXT</button>
 
             <div className={`${isEmpty() ? 'hidden' : 'block'} overflow-y-auto h-50 py-4 `}>
-                {numbers.length > 0 && (
-                   numbers.map((data , index) => (
+                {diceNumber.length > 0 && (
+                   diceNumber.map((data , index) => (
                     <div 
                        key={index} 
                        className='text-white py-1 flex'
@@ -75,6 +101,10 @@ function App() {
                 )}
             </div>
          </div>
+
+        <Toaster toastOptions={{
+          duration: 1000,
+        }}/>
       </main>
     </>
   )
