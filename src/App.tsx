@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css'
 import Button from './components/Button';
 
@@ -10,8 +10,31 @@ function App() {
   } 
 
   const isEmpty = (): boolean => numbers.length === 0;
-  const handleNextButton = () => setNumbers([...numbers.slice(1)]);
+  const handleNextButton = () => setNumbers(numbers.slice(1));
   const handleClearButton = () => setNumbers([]);
+
+  useEffect(() => {
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = event.key
+      
+        if (/^\d$/.test(key)) {
+          const value = parseInt(key, 10);
+          setNumbers([...numbers, value]);
+        }
+
+        if(key === 'Enter'){
+           setNumbers(numbers.slice(1))
+        }
+    };
+
+     document.addEventListener('keydown', handleKeyDown);
+
+    // Clean up the event listener when component unmounts
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [numbers]);
 
   return (
     <>
